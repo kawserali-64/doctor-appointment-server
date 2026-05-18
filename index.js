@@ -46,6 +46,11 @@ async function run() {
       const result = await doctorsCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
     });
+    app.get("/booking/:userEmail", async (req, res) => {
+      const { userEmail } = req.params;
+      const result = await bookingsCollection.find({ userEmail }).toArray();
+      res.send(result);
+    });
 
     // booking POST
     app.post('/booking', async (req, res) => {
@@ -53,6 +58,8 @@ async function run() {
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
+
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log("MongoDB connected!");
