@@ -11,11 +11,7 @@ const uri = process.env.MONGODB_URI;
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ IMPORTANT MIDDLEWARES
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true
-}));
+app.use(cors());
 
 app.use(express.json());
 
@@ -28,9 +24,9 @@ const client = new MongoClient(uri, {
 });
 
 const Jwks = createRemoteJWKSet(
-  new URL("http://localhost:3000/api/auth/jwks")
+  new URL(`${process.env.Client_URL}/api/auth/jwks`)
 )
-const verifyToken = async(req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).send({ message: "Unauthorized access" });
@@ -52,12 +48,23 @@ const verifyToken = async(req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("doctor");
     const doctorsCollection = db.collection("doctor");
     const bookingsCollection = db.collection("bookings");
     const usersCollection = db.collection("users");
+
+
+    app.get("/feature", async (req, res) => {
+      const result = await doctorsCollection
+        .find()
+        .sort({ rating: -1 })
+        .limit(4)
+        .toArray();
+
+      res.send(result);
+    });
 
     // all doctors
     app.get('/doctors', async (req, res) => {
@@ -80,13 +87,13 @@ async function run() {
     });
 
     // booking POST
-    app.post('/booking',verifyToken, async (req, res) => {
+    app.post('/booking', async (req, res) => {
       const booking = req.body;
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
 
-    app.delete('/booking/:bookingId',verifyToken, async (req, res) => {
+    app.delete('/booking/:bookingId', verifyToken, async (req, res) => {
       const { bookingId } = req.params;
       const result = await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
       res.send(result);
@@ -107,10 +114,10 @@ async function run() {
 
 
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("MongoDB connected!");
   } finally {
-    // keep alive
+
   }
 }
 
