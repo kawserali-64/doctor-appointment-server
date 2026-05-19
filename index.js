@@ -33,6 +33,7 @@ async function run() {
     const db = client.db("doctor");
     const doctorsCollection = db.collection("doctor");
     const bookingsCollection = db.collection("bookings");
+    const usersCollection = db.collection("users");
 
     // all doctors
     app.get('/doctors', async (req, res) => {
@@ -59,7 +60,16 @@ async function run() {
       res.send(result);
     });
 
+    app.delete('/booking/:bookingId', async (req, res) => {
+      const { bookingId } = req.params;
+      const result = await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
+      res.send(result);
+    }); 
+
+
     
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("MongoDB connected!");
