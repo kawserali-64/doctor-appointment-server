@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 
 const uri = process.env.MONGODB_URI;
 
@@ -26,6 +27,29 @@ const client = new MongoClient(uri, {
   }
 });
 
+const Jwks = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+)
+const verifyToken = async(req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, Jwks);
+    next();
+
+    // req.user = payload;
+  } catch (error) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+}
+
+
 async function run() {
   try {
     await client.connect();
@@ -42,42 +66,44 @@ async function run() {
     });
 
     // single doctor
-    app.get('/doctors/:id', async (req, res) => {
+    app.get('/doctors/:id', verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await doctorsCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
     });
-    app.get("/booking/:userEmail", async (req, res) => {
+
+
+    app.get("/booking/:userEmail", verifyToken, async (req, res) => {
       const { userEmail } = req.params;
       const result = await bookingsCollection.find({ userEmail }).toArray();
       res.send(result);
     });
 
     // booking POST
-    app.post('/booking', async (req, res) => {
+    app.post('/booking',verifyToken, async (req, res) => {
       const booking = req.body;
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
 
-    app.delete('/booking/:bookingId', async (req, res) => {
+    app.delete('/booking/:bookingId',verifyToken, async (req, res) => {
       const { bookingId } = req.params;
       const result = await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
       res.send(result);
-    }); 
+    });
 
-    
+
     app.put("/booking/:id", async (req, res) => {
-    const id = req.params.id;
-    const updatedData = req.body;
+      const id = req.params.id;
+      const updatedData = req.body;
 
-    const result = await bookingsCollection.updateOne(
+      const result = await bookingsCollection.updateOne(
         { _id: new ObjectId(id) },
         { $set: updatedData }
-    );
+      );
 
-    res.send(result);
-});
+      res.send(result);
+    });
 
 
 
