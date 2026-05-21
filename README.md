@@ -1,7 +1,7 @@
 # 🏥 DocAppoint Server (Backend)
 
 🌐 Live Server: https://doctor-appointment-server-lilac.vercel.app  
-📦 GitHub Repo: https://github.com/your-username/doctor-appointment-server  
+📦 GitHub Repo: https://github.com/kawserali-64/doctor-appointment-server  
 
 ---
 
